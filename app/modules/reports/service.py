@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +9,7 @@ from app.modules.achievements.schemas import ReportAchievementResponse
 from app.modules.blockers.model import ReportBlocker
 from app.modules.blockers.repository import ReportBlockerRepository
 from app.modules.blockers.schemas import ReportBlockerResponse
+from app.modules.projects.repository import ProjectRepository
 from app.modules.reports.model import Report
 from app.modules.reports.repository import ReportRepository
 from app.modules.reports.schemas import PaginatedReportsResponse, ReportCreateRequest, ReportListItemResponse, ReportResponse, ReportUpdateRequest
@@ -17,12 +18,11 @@ from app.modules.reviews.repository import ReportReviewRepository
 from app.modules.reviews.schemas import ReviewResponse
 from app.modules.tasks.model import ReportTask
 from app.modules.tasks.repository import ReportTaskRepository
-from app.modules.tasks.schemas import ReportTaskResponse
+from app.modules.tasks.schemas import ReportTaskRequest, ReportTaskResponse
 from app.modules.users.model import User
 from app.modules.versions.model import ReportVersion
 from app.modules.versions.repository import ReportVersionRepository
 from app.modules.versions.schemas import ReportVersionHistoryResponse, ReportVersionResponse
-from datetime import date, datetime, time, timedelta
 
 
 class ReportService:
@@ -35,6 +35,7 @@ class ReportService:
         blocker_repository: ReportBlockerRepository,
         achievement_repository: ReportAchievementRepository,
         review_repository: ReportReviewRepository,
+        project_repository: ProjectRepository,
     ):
         self.session = session
         self.report_repository = report_repository
@@ -43,10 +44,45 @@ class ReportService:
         self.blocker_repository = blocker_repository
         self.achievement_repository = achievement_repository
         self.review_repository = review_repository
+        self.project_repository = project_repository
+
+    async def validate_task_projects(self, current_user: User, tasks: list[ReportTaskRequest]) -> None:
+        project_ids = {task.project_id for task in tasks}
+
+        for project_id in project_ids:
+            project = await self.project_repository.get_by_id(project_id)
+
+            if project is None:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Project {project_id} does not exist.")
+
+            if not any(user.id == current_user.id for user in project.users):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"You are not assigned to project {project_id}.")
+
+    async def get_visible_version(self, report: Report, current_user: User) -> ReportVersion:
+        latest_version = await self.version_repository.get_latest(report.id)
+
+        if latest_version is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
+
+        if current_user.role == "TEAM_MEMBER":
+            return latest_version
+
+        if report.status == "NEEDS_CORRECTION":
+            versions = await self.version_repository.get_all(report.id)
+            submitted_versions = [version for version in versions if version.submitted_at is not None]
+
+            if not submitted_versions:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Submitted report version not found.")
+
+            return max(submitted_versions, key=lambda version: version.version_number)
+
+        return latest_version
 
     async def create_draft(self, current_user: User, data: ReportCreateRequest) -> ReportResponse:
         if data.week_start.weekday() != 0:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="The reporting week must start on Monday.")
+
+        await self.validate_task_projects(current_user, data.tasks)
 
         existing_report = await self.report_repository.get_by_user_and_week(current_user.id, data.week_start)
         if existing_report is not None:
@@ -117,18 +153,22 @@ class ReportService:
 
         await self.session.commit()
         await self.session.refresh(report)
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
     async def update_draft(self, current_user: User, report_id: int, data: ReportUpdateRequest) -> ReportResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
         if report.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own report.")
+
         if report.status not in {"DRAFT", "NEEDS_CORRECTION"}:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only draft or correction-requested reports can be edited.")
 
         version = await self.version_repository.get_latest(report.id)
+
         if version is None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
 
@@ -136,6 +176,7 @@ class ReportService:
             version.notes = data.notes
 
         if data.tasks is not None:
+            await self.validate_task_projects(current_user, data.tasks)
             await self.task_repository.delete_by_version(version.id)
 
             tasks = [
@@ -199,20 +240,25 @@ class ReportService:
                 self.achievement_repository.add_all(achievements)
 
         report.updated_at = datetime.now()
+
         await self.session.commit()
         await self.session.refresh(report)
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
     async def submit_report(self, current_user: User, report_id: int) -> ReportResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
         if report.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only submit your own report.")
+
         if report.status not in {"DRAFT", "NEEDS_CORRECTION"}:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only draft or correction-requested reports can be submitted.")
 
         version = await self.version_repository.get_latest(report.id)
+
         if version is None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
 
@@ -233,16 +279,19 @@ class ReportService:
 
         await self.session.commit()
         await self.session.refresh(report)
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
     async def request_changes(self, current_user: User, report_id: int, comment: str) -> ReportResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
         if report.status != "SUBMITTED":
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only submitted reports can be sent back for correction.")
 
         current_version = await self.version_repository.get_latest(report.id)
+
         if current_version is None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
 
@@ -250,10 +299,19 @@ class ReportService:
         current_blockers = await self.blocker_repository.get_by_version(current_version.id)
         current_achievements = await self.achievement_repository.get_by_version(current_version.id)
 
-        review = ReportReview(report_version_id=current_version.id, reviewer_id=current_user.id, action="REQUEST_CHANGES", comment=comment.strip())
+        review = ReportReview(
+            report_version_id=current_version.id,
+            reviewer_id=current_user.id,
+            action="REQUEST_CHANGES",
+            comment=comment.strip(),
+        )
         self.review_repository.add(review)
 
-        new_version = ReportVersion(report_id=report.id, version_number=current_version.version_number + 1, notes=current_version.notes)
+        new_version = ReportVersion(
+            report_id=report.id,
+            version_number=current_version.version_number + 1,
+            notes=current_version.notes,
+        )
         self.version_repository.add(new_version)
         await self.session.flush()
 
@@ -308,16 +366,19 @@ class ReportService:
 
         await self.session.commit()
         await self.session.refresh(report)
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
     async def approve_report(self, current_user: User, report_id: int) -> ReportResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
         if report.status != "SUBMITTED":
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only submitted reports can be approved.")
 
         version = await self.version_repository.get_latest(report.id)
+
         if version is None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
 
@@ -329,7 +390,7 @@ class ReportService:
 
         await self.session.commit()
         await self.session.refresh(report)
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
     async def get_reports(
         self,
@@ -369,6 +430,7 @@ class ReportService:
 
     async def get_report_detail(self, current_user: User, report_id: int) -> ReportResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
@@ -378,12 +440,10 @@ class ReportService:
         if current_user.role in {"MANAGER", "ADMIN"} and report.status == "DRAFT":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Draft report content is private to the report owner.")
 
-        return await self.build_response(report)
+        return await self.build_response(report, current_user)
 
-    async def build_response(self, report: Report) -> ReportResponse:
-        version = await self.version_repository.get_latest(report.id)
-        if version is None:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Report version not found.")
+    async def build_response(self, report: Report, current_user: User) -> ReportResponse:
+        version = await self.get_visible_version(report, current_user)
 
         tasks = await self.task_repository.get_by_version(version.id)
         blockers = await self.blocker_repository.get_by_version(version.id)
@@ -413,6 +473,7 @@ class ReportService:
 
     async def get_version_history(self, current_user: User, report_id: int) -> list[ReportVersionHistoryResponse]:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
@@ -423,10 +484,15 @@ class ReportService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Draft report content is private to the report owner.")
 
         versions = await self.version_repository.get_all(report.id)
+
+        if current_user.role in {"MANAGER", "ADMIN"}:
+            versions = [version for version in versions if version.submitted_at is not None]
+
         return [await self.build_version_history_response(version) for version in versions]
 
     async def get_version_detail(self, current_user: User, report_id: int, version_number: int) -> ReportVersionHistoryResponse:
         report = await self.report_repository.get_by_id(report_id)
+
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
@@ -441,6 +507,9 @@ class ReportService:
 
         if version is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report version not found.")
+
+        if current_user.role in {"MANAGER", "ADMIN"} and version.submitted_at is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This report version has not been submitted.")
 
         return await self.build_version_history_response(version)
 

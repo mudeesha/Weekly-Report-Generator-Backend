@@ -1,107 +1,63 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
-from app.modules.auth.schemas import (
-    CurrentUserResponse,
-    TokenResponse,
-)
+from app.modules.auth.schemas import CurrentUserResponse, TokenResponse
 from app.modules.auth.security import get_current_user
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
 from app.modules.users.repository import UserRepository
-from app.modules.users.schemas import (
-    UserRegisterRequest,
-    UserResponse,
-)
+from app.modules.users.schemas import UserInviteAcceptRequest, UserRegisterRequest, UserResponse
 from app.modules.users.service import UserService
 
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["Authentication"],
-)
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post(
-    "/register",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     data: UserRegisterRequest,
-    session: Annotated[
-        AsyncSession,
-        Depends(get_db_session),
-    ],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserResponse:
-    user_repository = UserRepository(session)
-
-    user_service = UserService(
-        session,
-        user_repository,
-    )
-
-    user = await user_service.register(data)
-
-    return UserResponse.model_validate(user)
+    return await UserService(session, UserRepository(session)).register(data)
 
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-)
+@router.post("/login", response_model=TokenResponse)
 async def login(
-    form_data: Annotated[
-        OAuth2PasswordRequestForm,
-        Depends(),
-    ],
-    session: Annotated[
-        AsyncSession,
-        Depends(get_db_session),
-    ],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> TokenResponse:
-    user_repository = UserRepository(session)
-
-    auth_service = AuthService(user_repository)
-
-    user = await auth_service.authenticate(
-        email=form_data.username,
-        password=form_data.password,
-    )
+    auth_service = AuthService(UserRepository(session))
+    user = await auth_service.authenticate(form_data.username, form_data.password)
 
     if user is None:
+        from fastapi import HTTPException
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
-            headers={
-                "WWW-Authenticate": "Bearer",
-            },
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = auth_service.create_token(user)
-
     return TokenResponse(
-        access_token=token,
+        access_token=auth_service.create_token(user),
+        token_type="bearer",
     )
 
 
-@router.get(
-    "/me",
-    response_model=CurrentUserResponse,
-)
+@router.post("/accept-invite", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def accept_invitation(
+    data: UserInviteAcceptRequest,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> UserResponse:
+    return await UserService(session, UserRepository(session)).accept_invitation(data)
+
+
+@router.get("/me", response_model=CurrentUserResponse)
 async def get_me(
-    current_user: Annotated[
-        User,
-        Depends(get_current_user),
-    ],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> CurrentUserResponse:
-    return CurrentUserResponse(
-        id=current_user.id,
-        name=current_user.name,
-        email=current_user.email,
-        role=current_user.role,
-    )
+    return CurrentUserResponse.model_validate(current_user)

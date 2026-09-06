@@ -8,6 +8,7 @@ from app.db.session import get_db_session
 from app.modules.achievements.repository import ReportAchievementRepository
 from app.modules.auth.security import get_current_user, require_roles
 from app.modules.blockers.repository import ReportBlockerRepository
+from app.modules.projects.repository import ProjectRepository
 from app.modules.reports.repository import ReportRepository
 from app.modules.reports.schemas import PaginatedReportsResponse, ReportCreateRequest, ReportResponse, ReportStatus, ReportUpdateRequest
 from app.modules.reports.service import ReportService
@@ -31,6 +32,7 @@ def get_report_service(session: AsyncSession) -> ReportService:
         blocker_repository=ReportBlockerRepository(session),
         achievement_repository=ReportAchievementRepository(session),
         review_repository=ReportReviewRepository(session),
+        project_repository=ProjectRepository(session),
     )
 
 

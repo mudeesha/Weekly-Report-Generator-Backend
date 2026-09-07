@@ -6,6 +6,7 @@ from app.modules.projects.router import router as projects_router
 from app.modules.reports.router import router as reports_router
 from app.modules.users.router import router as users_router
 from app.modules.dashboard.router import router as dashboard_router
+from app.modules.ai.router import router as ai_router
 
 api_router = APIRouter()
 
@@ -15,3 +16,4 @@ api_router.include_router(users_router)
 api_router.include_router(projects_router)
 api_router.include_router(reports_router)
 api_router.include_router(dashboard_router)
+api_router.include_router(ai_router)

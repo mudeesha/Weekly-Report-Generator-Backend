@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
+    gemini_api_key: str = Field(default="", repr=False)
+    gemini_model: str = "gemini-3.7-flash"
+    ai_context_weeks: int = Field(default=12, ge=1, le=52)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

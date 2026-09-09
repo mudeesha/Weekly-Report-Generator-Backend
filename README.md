@@ -103,7 +103,9 @@ Create the database.
 ```sql
 
 CREATE DATABASE weekly_report
+
 CHARACTER SET utf8mb4
+
 COLLATE utf8mb4_unicode_ci;
 
 ```
@@ -121,6 +123,14 @@ Run database migrations.
 ```bash
 
 alembic upgrade head
+
+```
+
+Seed the demo users and project after running the migrations.
+
+```bash
+
+uv run python -m app.db.seeders.demo_data
 
 ```
 
@@ -151,6 +161,8 @@ http://127.0.0.1:8000/docs
 pip install -r requirements.txt
 
 alembic upgrade head
+
+uv run python -m app.db.seeders.demo_data
 
 uvicorn app.main --reload
 
@@ -224,17 +236,17 @@ MANAGER REVIEW
 
 └── NEEDS_CORRECTION
 
-         ↓
+     ↓
 
-    EDIT NEW VERSION
+EDIT NEW VERSION
 
-         ↓
+     ↓
 
-      SUBMITTED
+  SUBMITTED
 
-         ↓
+     ↓
 
-      APPROVED
+  APPROVED
 
 ```
 

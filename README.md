@@ -1,266 +1,299 @@
-Weekly Report Generator - Backend
+# Weekly Report Generator — FastAPI Backend
 
-FastAPI backend for the Weekly Report Generator & Team Dashboard.
+A real **FastAPI + Python** backend for the Weekly Report Generator and Team Dashboard. It provides authentication, role-based access, project management, weekly report workflow, report version history, dashboards, analytics, and the Gemini-backed AI assistant.
 
-Technology Stack
+## Stack
 
-Python 3.12
+- Python 3.12
 
-FastAPI
+- FastAPI
 
-SQLAlchemy Async
+- SQLAlchemy Async
 
-asyncmy
+- asyncmy
 
-MySQL 8
+- MySQL 8
 
-Alembic
+- Alembic
 
-Pydantic
+- Pydantic
 
-JWT Authentication
+- JWT Authentication
 
-pwdlib / Argon2
+- Argon2 password hashing
 
-Google Gemini API
+- Gemini AI
 
-pytest
+- pytest
 
-uv
+## Local setup
 
-Backend Architecture
+Requirements: Python 3.12+, MySQL 8, and Git.
 
-Router
-  ↓
-Service
-  ↓
-Repository
-  ↓
-SQLAlchemy
-  ↓
-MySQL
+Create and activate a virtual environment.
 
-Prerequisites
+```bash
 
-Python 3.12
+python3.12 -m venv .venv
 
-uv
+source .venv/bin/activate
 
-MySQL 8
+```
 
-Git
+Install all backend dependencies directly from `requirements.txt`.
 
-Check versions:
+```bash
 
-python --version
-uv --version
-mysql --version
-git --version
+pip install -r requirements.txt
 
-Installation
+```
 
-git clone <BACKEND_REPOSITORY_URL>
-cd <BACKEND_REPOSITORY_FOLDER>
-uv sync
+Create the environment file.
 
-Database Setup
+```bash
 
-Start MySQL:
+cp .env.example .env
+
+```
+
+Update `.env` with your local configuration.
+
+```env
+
+DATABASE_URL=mysql+asyncmy://root@127.0.0.1:3306/weekly_report
+
+JWT_SECRET_KEY=CHANGE_THIS_TO_A_SECURE_SECRET
+
+JWT_ALGORITHM=HS256
+
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+CORS_ORIGINS=http://127.0.0.1:3000
+
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+
+GEMINI_MODEL=gemini-3.7-flash
+
+AI_CONTEXT_WEEKS=12
+
+```
+
+Never commit database passwords, JWT signing secrets, Gemini API keys, or the `.env` file.
+
+## Database setup
+
+Start MySQL.
+
+```bash
 
 sudo systemctl start mysql
 
-Login:
+```
+
+Login to MySQL.
+
+```bash
 
 mysql -u root -p
 
-Create database:
+```
+
+Create the database.
+
+```sql
 
 CREATE DATABASE weekly_report
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
-Exit:
+```
+
+Exit MySQL.
+
+```sql
 
 EXIT;
 
-Environment Configuration
+```
 
-Create .env in the backend root.
+Run database migrations.
 
-DATABASE_URL=mysql+asyncmy://root:YOUR_MYSQL_PASSWORD@localhost:3306/weekly_report
+```bash
 
-JWT_SECRET_KEY=CHANGE_THIS_TO_A_SECURE_SECRET
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
+alembic upgrade head
 
-CORS_ORIGINS=http://localhost:3000
+```
 
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-GEMINI_MODEL=gemini-3.7-flash
-AI_CONTEXT_WEEKS=12
+## Run backend
 
-Use the exact variable names from your repository's .env.example if they differ.
+Start the FastAPI development server.
 
-Never commit .env, database passwords, JWT secrets, or API keys.
+```bash
 
-Run Database Migrations
+uvicorn app.main --reload
 
-uv run alembic upgrade head
+```
 
-Verify:
+Open **http://127.0.0.1:8000**.
 
-mysql -u root -p
+Swagger API documentation is available at:
 
-USE weekly_report;
-SHOW TABLES;
+```text
 
-Main tables:
+http://127.0.0.1:8000/docs
 
-users
-projects
-project_user
-reports
-report_versions
-report_tasks
-report_blockers
-report_achievements
-report_reviews
-alembic_version
+```
 
-Run the Backend
+## Commands
 
-uv run uvicorn app.main:app --reload
+```bash
 
-Backend:
+pip install -r requirements.txt
 
-http://localhost:8000
+alembic upgrade head
 
-Swagger:
+uvicorn app.main --reload
 
-http://localhost:8000/docs
+pytest -q
 
-Run Tests
+```
 
-uv run pytest -q
+## Architecture
 
-Roles
+```text
 
-TEAM_MEMBER
+Router
 
-Create/edit own reports
+↓
 
-Save drafts
+Service
 
-Submit/resubmit
+↓
 
-View correction comments
+Repository
 
-View version history
+↓
 
-MANAGER
+SQLAlchemy
 
-View team reports
+↓
 
-Review submitted reports
+MySQL
 
-Request corrections
+```
 
-Approve
+The router handles HTTP requests and authentication. The service layer contains business rules and workflow logic. The repository layer handles database queries and persistence.
 
-Dashboard and analytics
+## Main features
 
-Project/member management
+- JWT authentication
 
-AI Assistant
+- Team Member, Manager, and Admin roles
 
-Managers cannot read unpublished draft content.
+- User management
 
-ADMIN
+- Project management and member assignment
 
-Manager capabilities
+- Weekly report creation and submission
 
-Create users
+- Report review and correction workflow
 
-Change roles
+- Report version history
 
-Deactivate users
+- Draft privacy
 
-Manage users/projects
+- Dashboard and analytics
 
-Report Workflow
+- Gemini AI assistant
+
+## Report workflow
+
+```text
 
 DRAFT
-  ↓
+
+↓
+
 SUBMITTED
-  ├── APPROVED
-  └── NEEDS_CORRECTION
-          ↓
-      EDIT NEW VERSION
-          ↓
-       SUBMITTED
-          ↓
-       APPROVED
 
-Important:
+↓
 
-manager never edits Team Member report content
+MANAGER REVIEW
 
-corrections create a new editable version
+├── APPROVED
 
-old submitted versions remain unchanged
+└── NEEDS_CORRECTION
 
-reviews are linked to exact report versions
+         ↓
 
-drafts remain private
+    EDIT NEW VERSION
 
-AI Assistant
+         ↓
 
-The AI Assistant is available to Manager/Admin.
+      SUBMITTED
 
-Manager Question
-      ↓
-FastAPI AI Service
-      ↓
-Load submitted report data
-      ↓
-Build structured context
-      ↓
-Gemini
-      ↓
-Grounded answer
+         ↓
 
-The AI does not directly access MySQL and does not receive private draft content.
+      APPROVED
 
-Security
+```
 
-Passwords are hashed with Argon2.
+Old submitted versions remain unchanged. Manager reviews are linked to the exact report version being reviewed.
 
-JWT is used for protected APIs.
+## Role access
 
-Backend loads the current user from the database.
+| Feature | Team Member | Manager | Admin |
 
-Role and active status are checked on protected requests.
+|---|---:|---:|---:|
 
-Frontend visibility is not authorization.
+| Create/edit own reports | Yes | No | No |
 
-Draft privacy is enforced by the backend.
+| Submit own reports | Yes | No | No |
 
-Future Improvements
+| View team reports | No | Yes | Yes |
 
-Project-scoped Manager role
+| Request corrections | No | Yes | Yes |
 
-Notifications/reminders
+| Approve reports | No | Yes | Yes |
 
-PDF/Excel export
+| Dashboard and analytics | No | Yes | Yes |
 
-Audit logging
+| Manage projects | No | Yes | Yes |
 
-Profile/password management
+| Manage users | No | No | Yes |
 
-CI/CD
+| AI assistant | No | Yes | Yes |
 
-End-to-end browser tests
+The backend remains the final authorization boundary. Role and active status are checked on protected requests.
 
-Persistent AI history
+## AI assistant
 
-RAG/semantic search for larger report volume
+The backend exposes:
+
+```text
+
+POST /api/v1/ai/chat
+
+```
+
+The backend first loads relevant submitted report data, creates structured context, and then sends that context to Gemini.
+
+The Gemini API key remains only in the FastAPI backend.
+
+## Verification
+
+After installing dependencies and configuring the database, run:
+
+```bash
+
+pytest -q
+
+```
+
+Then start the backend:
+
+```bash
+
+uvicorn app.main --reload
+
+```

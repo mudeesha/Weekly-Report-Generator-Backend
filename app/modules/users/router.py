@@ -1,13 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.modules.auth.security import require_roles
 from app.modules.users.model import User
 from app.modules.users.repository import UserRepository
-from app.modules.users.schemas import UserInviteRequest, UserInviteResponse, UserResponse, UserRoleUpdateRequest
+from app.modules.users.schemas import (
+    UserCreateRequest,
+    UserResponse,
+    UserRoleUpdateRequest,
+)
 from app.modules.users.service import UserService
 
 
@@ -26,13 +30,13 @@ async def get_users(
     return await get_user_service(session).get_all()
 
 
-@router.post("/invitations", response_model=UserInviteResponse)
-async def create_invitation(
-    data: UserInviteRequest,
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    data: UserCreateRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
     current_user: Annotated[User, Depends(require_roles("ADMIN"))],
-) -> UserInviteResponse:
-    return await get_user_service(session).create_invitation(data)
+) -> UserResponse:
+    return await get_user_service(session).create(data)
 
 
 @router.get("/{user_id}", response_model=UserResponse)

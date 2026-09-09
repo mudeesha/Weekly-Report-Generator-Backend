@@ -1,0 +1,22 @@
+# Prefer `uv sync` with pyproject.toml/uv.lock for exact versions.
+
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncmy
+alembic
+pydantic
+pydantic-settings
+email-validator
+python-multipart
+PyJWT
+pwdlib[argon2]
+google-genai
+pytest
+pytest-asyncio
+httpx
+
+# Runtime requirements
+# Python 3.12
+# MySQL 8
+# uv

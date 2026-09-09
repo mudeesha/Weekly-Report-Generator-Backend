@@ -12,24 +12,15 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
-class UserRoleUpdateRequest(BaseModel):
-    role: UserRole
-
-
-class UserInviteRequest(BaseModel):
+class UserCreateRequest(BaseModel):
     name: str = Field(min_length=2, max_length=150)
     email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
     role: UserRole = "TEAM_MEMBER"
 
 
-class UserInviteResponse(BaseModel):
-    invitation_token: str
-    expires_in_hours: int
-
-
-class UserInviteAcceptRequest(BaseModel):
-    token: str
-    password: str = Field(min_length=8, max_length=128)
+class UserRoleUpdateRequest(BaseModel):
+    role: UserRole
 
 
 class UserResponse(BaseModel):

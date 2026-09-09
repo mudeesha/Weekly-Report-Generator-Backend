@@ -10,7 +10,7 @@ from app.modules.auth.security import get_current_user
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
 from app.modules.users.repository import UserRepository
-from app.modules.users.schemas import UserInviteAcceptRequest, UserRegisterRequest, UserResponse
+from app.modules.users.schemas import UserRegisterRequest, UserResponse
 from app.modules.users.service import UserService
 
 
@@ -46,14 +46,6 @@ async def login(
         access_token=auth_service.create_token(user),
         token_type="bearer",
     )
-
-
-@router.post("/accept-invite", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def accept_invitation(
-    data: UserInviteAcceptRequest,
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-) -> UserResponse:
-    return await UserService(session, UserRepository(session)).accept_invitation(data)
 
 
 @router.get("/me", response_model=CurrentUserResponse)

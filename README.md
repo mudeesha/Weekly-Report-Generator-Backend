@@ -22,11 +22,11 @@ The backend provides authentication, role-based access, project management, week
 
 ---
 
-## Local Development Setup
+# Local Development Setup
 
 Follow the steps below in order to run the backend locally.
 
-### 1. Prerequisites
+## 1. Prerequisites
 
 Make sure the following are installed:
 
@@ -46,7 +46,9 @@ Verify MySQL:
 mysql --version
 ```
 
-### 2. Clone the Repository
+---
+
+## 2. Clone the Repository
 
 Clone the project and move into the backend directory:
 
@@ -55,7 +57,9 @@ git clone <repository-url>
 cd <project-directory>
 ```
 
-### 3. Create a Virtual Environment
+---
+
+## 3. Create a Virtual Environment
 
 Create a Python virtual environment:
 
@@ -65,19 +69,21 @@ python3.12 -m venv .venv
 
 Activate the virtual environment.
 
-**Linux / macOS**
+### Linux / macOS
 
 ```bash
 source .venv/bin/activate
 ```
 
-**Windows**
+### Windows
 
 ```bash
 .venv\Scripts\activate
 ```
 
-### 4. Install Dependencies
+---
+
+## 4. Install Dependencies
 
 Install all backend dependencies from `requirements.txt`:
 
@@ -87,9 +93,7 @@ pip install -r requirements.txt
 
 ---
 
-## Environment Configuration
-
-### 5. Create the Environment File
+## 5. Create the Environment File
 
 Create your local `.env` file from the example configuration:
 
@@ -134,11 +138,11 @@ AI_CONTEXT_WEEKS=12
 
 ---
 
-## Gemini API Key Setup
+# Gemini API Key Setup
 
-The AI assistant requires a Gemini API key. Follow the steps below to create one and add it to your local environment.
+The AI assistant requires a Gemini API key.
 
-### 6. Open Google AI Studio
+## 6. Open Google AI Studio
 
 Open the Google AI Studio API Keys page:
 
@@ -146,7 +150,9 @@ Open the Google AI Studio API Keys page:
 
 Sign in using the Google account that you want to use for the Gemini API.
 
-### 7. Open the API Keys Page
+---
+
+## 7. Open the API Keys Page
 
 After opening Google AI Studio, go to **API Keys**.
 
@@ -154,7 +160,9 @@ The page should look similar to this:
 
 ![Google AI Studio API Keys](docs/images/gemini-api-keys.png)
 
-### 8. Create a New API Key
+---
+
+## 8. Create a New API Key
 
 Click **Create API key**.
 
@@ -167,7 +175,9 @@ In the **Create a new key** dialog:
 
 ![Create Gemini API Key](docs/images/gemini-create-api-key.png)
 
-### 9. Copy the API Key
+---
+
+## 9. Copy the API Key
 
 After the key is created, copy the generated API key.
 
@@ -175,7 +185,9 @@ Keep the key private.
 
 > **Never** share your Gemini API key publicly or commit it to Git.
 
-### 10. Add the Gemini API Key to `.env`
+---
+
+## 10. Add the Gemini API Key to `.env`
 
 Open the backend `.env` file and replace:
 
@@ -195,9 +207,9 @@ Do not add it to frontend environment variables such as `NEXT_PUBLIC_*`.
 
 ---
 
-## Database Setup
+# Database Setup
 
-### 11. Start MySQL
+## 11. Start MySQL
 
 Start the MySQL service:
 
@@ -211,7 +223,9 @@ Check that MySQL is running:
 sudo systemctl status mysql
 ```
 
-### 12. Log in to MySQL
+---
+
+## 12. Log in to MySQL
 
 Open the MySQL client:
 
@@ -221,7 +235,9 @@ mysql -u root -p
 
 Enter your MySQL password when prompted.
 
-### 13. Create the Database
+---
+
+## 13. Create the Database
 
 Create the `weekly_report` database:
 
@@ -239,9 +255,9 @@ EXIT;
 
 ---
 
-## Database Migration
+# Database Migration
 
-### 14. Run Alembic Migrations
+## 14. Run Alembic Migrations
 
 Apply the database migrations:
 
@@ -253,9 +269,9 @@ This creates and updates the required database tables.
 
 ---
 
-## Demo Data
+# Demo Data
 
-### 15. Seed Demo Data
+## 15. Seed Demo Data
 
 After the migrations complete successfully, seed the demo users and project:
 
@@ -267,9 +283,9 @@ This prepares the database with the sample data required for local development a
 
 ---
 
-## Run the Backend
+# Run the Backend
 
-### 16. Start the FastAPI Server
+## 16. Start the FastAPI Server
 
 Start the development server:
 
@@ -281,7 +297,9 @@ The backend will be available at:
 
 **http://127.0.0.1:8000**
 
-### API Documentation
+---
+
+## API Documentation
 
 FastAPI automatically provides interactive API documentation.
 
@@ -293,15 +311,9 @@ You can use Swagger UI to view and test the available API endpoints.
 
 ---
 
-## Development Commands
+# Development Commands
 
 The following commands are commonly used during development.
-
-### Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
 
 ### Run database migrations
 
@@ -329,7 +341,7 @@ pytest -q
 
 ---
 
-## Architecture
+# Architecture
 
 The backend follows a layered architecture:
 
@@ -345,54 +357,30 @@ SQLAlchemy
 MySQL
 ```
 
-### Router
+The router handles HTTP requests and authentication.
 
-Handles:
+The service layer contains business rules and workflow logic.
 
-- HTTP requests
-- Request validation
-- Authentication
-- API responses
-
-### Service
-
-Contains:
-
-- Business rules
-- Workflow logic
-- Authorization-related business decisions
-- Application operations
-
-### Repository
-
-Handles:
-
-- Database queries
-- Data persistence
-- Database-specific operations
+The repository layer handles database queries and persistence.
 
 ---
 
-## Main Features
+# Main Features
 
 - JWT authentication
 - Team Member, Manager, and Admin roles
 - User management
-- Project management
-- Project member assignment
-- Weekly report creation
-- Weekly report submission
-- Report review
-- Report correction workflow
+- Project management and member assignment
+- Weekly report creation and submission
+- Report review and correction workflow
 - Report version history
 - Draft privacy
-- Dashboard
-- Analytics
+- Dashboard and analytics
 - Gemini AI assistant
 
 ---
 
-## Report Workflow
+# Report Workflow
 
 Reports follow the workflow below:
 
@@ -419,7 +407,7 @@ Manager reviews are linked to the exact report version being reviewed.
 
 ---
 
-## Role Access
+# Role Access
 
 | Feature | Team Member | Manager | Admin |
 |---|:---:|:---:|:---:|
@@ -439,7 +427,7 @@ Role and active-status checks are applied to protected requests.
 
 ---
 
-## AI Assistant
+# AI Assistant
 
 The backend exposes the following endpoint:
 
@@ -469,7 +457,7 @@ The Gemini API key remains **only in the FastAPI backend**.
 
 ---
 
-## Verification
+# Verification
 
 After completing the installation, environment configuration, and database setup, run the test suite:
 
@@ -493,7 +481,7 @@ For API documentation:
 
 ---
 
-## Security Notes
+# Security Notes
 
 Never commit or expose the following:
 

@@ -1,384 +1,469 @@
-# Weekly Report Generator — FastAPI Backend
+Weekly Report Generator --- FastAPI Backend
 
-A real **\*\*FastAPI + Python\*\*** backend for the Weekly Report Generator and Team Dashboard. It provides authentication, role-based access, project management, weekly report workflow, report version history, dashboards, analytics, and the Gemini-backed AI assistant.
+A production-ready FastAPI + Python backend for the Weekly Report
+Generator and Team Dashboard.
 
-**## Stack**
+The backend provides authentication, role-based access, project
+management, weekly report workflows, report version history, dashboards,
+analytics, and a Gemini-powered AI assistant.
 
-\- Python 3.12
+Tech Stack
 
-\- FastAPI
+Python 3.12
 
-\- SQLAlchemy Async
+FastAPI
 
-\- asyncmy
+SQLAlchemy Async
 
-\- MySQL 8
+asyncmy
 
-\- Alembic
+MySQL 8
 
-\- Pydantic
+Alembic
 
-\- JWT Authentication
+Pydantic
 
-\- Argon2 password hashing
+JWT Authentication
 
-\- Gemini AI
+Argon2 Password Hashing
 
-\- pytest
+Gemini AI
 
-**## Local setup**
+pytest
 
-Requirements: Python 3.12+, MySQL 8, and Git.
+Local Development Setup
 
-Create and activate a virtual environment.
+Follow the steps below in order to run the backend locally.
 
-\`\`\`bash
+1. Prerequisites
+
+Make sure the following are installed:
+
+Python 3.12+
+
+MySQL 8
+
+Git
+
+Verify Python:
+
+python3.12 --version
+
+Verify MySQL:
+
+mysql --version
+
+2. Clone the Repository
+
+Clone the project and move into the backend directory:
+
+git clone <repository-url>
+cd <project-directory>
+
+3. Create a Virtual Environment
+
+Create a Python virtual environment:
 
 python3.12 -m venv .venv
 
+Activate the virtual environment.
+
+Linux / macOS
+
 source .venv/bin/activate
 
-\`\`\`
+Windows
 
-Install all backend dependencies directly from \`requirements.txt\`.
+.venv\Scripts\activate
 
-\`\`\`bash
+4. Install Dependencies
+
+Install all backend dependencies from requirements.txt:
 
 pip install -r requirements.txt
 
-\`\`\`
+Environment Configuration
 
-Create the environment file.
+5. Create the Environment File
 
-\`\`\`bash
+Create your local .env file from the example configuration:
 
 cp .env.example .env
 
-\`\`\`
+Open .env and update the configuration according to your local
+environment.
 
-Update \`.env\` with your local configuration.
+DATABASE_URL=mysql+asyncmy://root@127.0.0.1:3306/weekly_report
 
-\`\`\`env
+JWT_SECRET_KEY=CHANGE_THIS_TO_A_SECURE_SECRET
 
-DATABASE\_URL=mysql+asyncmy://root\@127.0.0.1:3306/weekly\_report
+JWT_ALGORITHM=HS256
 
-JWT\_SECRET\_KEY=CHANGE\_THIS\_TO\_A\_SECURE\_SECRET
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-JWT\_ALGORITHM=HS256
+CORS_ORIGINS=http://127.0.0.1:3000
 
-ACCESS\_TOKEN\_EXPIRE\_MINUTES=60
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 
-CORS\_ORIGINS=[http://127.0.0.1:3000](http://127.0.0.1:3000)
+GEMINI_MODEL=gemini-3.7-flash
 
-GEMINI\_API\_KEY=YOUR\_GEMINI\_API\_KEY
+AI_CONTEXT_WEEKS=12
 
-GEMINI\_MODEL=gemini-3.7-flash
+Environment Variables
 
-AI\_CONTEXT\_WEEKS=12
+Variable                        Description
 
-\`\`\`
+DATABASE_URL                  MySQL database connection URL
+JWT_SECRET_KEY                Secret used to sign JWT tokens
+JWT_ALGORITHM                 JWT signing algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES   Access token expiration time
+CORS_ORIGINS                  Allowed frontend origin
+GEMINI_API_KEY                Google Gemini API key
+GEMINI_MODEL                  Gemini model used by the AI assistant
+AI_CONTEXT_WEEKS              Number of previous weeks used as AI context
 
-Never commit database passwords, JWT signing secrets, Gemini API keys, or the \`.env\` file.
+Important: Never commit .env, database passwords, JWT secrets,
+or Gemini API keys to Git.
 
-**## Gemini API Key Setup**
+Gemini API Key Setup
 
-The Gemini AI assistant requires a Gemini API key. Follow these steps to create a key and add it to your local environment.
+The AI assistant requires a Gemini API key.
 
-### 1. Open Google AI Studio
+6. Open Google AI Studio
 
-Open the Google AI Studio API Keys page using the following link:
+Open the Google AI Studio API Keys page:
 
-[Google AI Studio — API Keys](https://aistudio.google.com/app/api-keys?project=gen-lang-client-0644397669)
+Google AI Studio --- API
+Keys
 
-You must be signed in to the Google account that you want to use for the Gemini API.
+Sign in using the Google account that you want to use for the Gemini
+API.
 
-### 2. Open the API Keys page
+7. Open the API Keys Page
 
-After opening Google AI Studio, go to the **API Keys** section.
+After opening Google AI Studio, go to API Keys.
 
-You should see the API keys page similar to the following:
+The page should look similar to this:
 
-![Google AI Studio API Keys](docs/images/gemini-api-keys.png)
 
-### 3. Create a new API key
 
-Click the **Create API key** button in the top-right corner.
+8. Create a New API Key
 
-![Create Gemini API Key](docs/images/gemini-create-api-key.png)
+Click Create API key.
 
-### 4. Select the project
+In the Create a new key dialog:
 
-In the **Create a new key** dialog:
+Enter a descriptive name for the key.
 
-1. Enter a descriptive name for the API key, for example:
-   `Weekly Report AI Assistant`
-2. Select the required Google AI Studio project.
-3. Click **Create key**.
+Example: Weekly Report AI Assistant
 
-### 5. Copy the API key
+Select the required Google AI Studio project.
+
+Click Create key.
+
+
+
+9. Copy the API Key
 
 After the key is created, copy the generated API key.
 
-**Do not share the API key publicly or commit it to Git.**
+Keep the key private.
 
-### 6. Add the API key to `.env`
+Never share your Gemini API key publicly or commit it to Git.
 
-Open the backend `.env` file and replace the placeholder value:
+10. Add the Gemini API Key to .env
 
-\`\`\`env
+Open the backend .env file and replace:
 
-GEMINI\_API\_KEY=YOUR\_GEMINI\_API\_KEY
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 
-\`\`\`
+with your actual API key:
 
-with your actual Gemini API key:
+GEMINI_API_KEY=your_actual_gemini_api_key
 
-\`\`\`env
+The Gemini API key must remain on the FastAPI backend.
 
-GEMINI\_API\_KEY=your_actual_gemini_api_key
+Do not add it to frontend environment variables such as NEXT_PUBLIC_*.
 
-\`\`\`
+Database Setup
 
-Keep the key only in the FastAPI backend environment.
+11. Start MySQL
 
-### 7. Restart the backend
-
-After updating `.env`, restart the FastAPI server so the new environment variable is loaded.
-
-\`\`\`bash
-
-uvicorn app.main --reload
-
-\`\`\`
-
-**Important:** Never add the Gemini API key to frontend environment variables such as `NEXT_PUBLIC_*`, commit it to Git, or include it directly in source code.
-
-**## Database setup**
-
-Start MySQL.
-
-\`\`\`bash
+Start the MySQL service:
 
 sudo systemctl start mysql
 
-\`\`\`
+Check that MySQL is running:
 
-Login to MySQL.
+sudo systemctl status mysql
 
-\`\`\`bash
+12. Log in to MySQL
+
+Open the MySQL client:
 
 mysql -u root -p
 
-\`\`\`
+Enter your MySQL password when prompted.
 
-Create the database.
+13. Create the Database
 
-\`\`\`sql
+Create the weekly_report database:
 
-CREATE DATABASE weekly\_report
-
+CREATE DATABASE weekly_report
 CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 
-COLLATE utf8mb4\_unicode\_ci;
-
-\`\`\`
-
-Exit MySQL.
-
-\`\`\`sql
+Exit MySQL:
 
 EXIT;
 
-\`\`\`
+Database Migration
 
-Run database migrations.
+14. Run Alembic Migrations
 
-\`\`\`bash
+Apply the database migrations:
 
 alembic upgrade head
 
-\`\`\`
+This creates and updates the required database tables.
 
-Seed the demo users and project after running the migrations.
+Demo Data
 
-\`\`\`bash
+15. Seed Demo Data
 
-uv run python -m app.db.seeders.demo\_data
+After the migrations complete successfully, seed the demo users and
+project:
 
-\`\`\`
+uv run python -m app.db.seeders.demo_data
 
-**## Run backend**
+This prepares the database with the sample data required for local
+development and testing.
 
-Start the FastAPI development server.
+Run the Backend
 
-\`\`\`bash
+16. Start the FastAPI Server
+
+Start the development server:
 
 uvicorn app.main --reload
 
-\`\`\`
+The backend will be available at:
 
-Open **\*\*http\://127.0.0.1:8000\*\***.
+http://127.0.0.1:8000
 
-Swagger API documentation is available at:
+API Documentation
 
-\`\`\`text
+FastAPI automatically provides interactive API documentation.
 
-[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+Open:
 
-\`\`\`
+http://127.0.0.1:8000/docs
 
-**## Commands**
+You can use Swagger UI to view and test the available API endpoints.
 
-\`\`\`bash
+Development Commands
+
+The following commands are commonly used during development.
+
+Install dependencies
 
 pip install -r requirements.txt
 
+Run database migrations
+
 alembic upgrade head
 
-uv run python -m app.db.seeders.demo\_data
+Seed demo data
+
+uv run python -m app.db.seeders.demo_data
+
+Start development server
 
 uvicorn app.main --reload
 
+Run tests
+
 pytest -q
 
-\`\`\`
+Architecture
 
-**## Architecture**
+The backend follows a layered architecture:
 
-\`\`\`text
+Router
+   ↓
+Service
+   ↓
+Repository
+   ↓
+SQLAlchemy
+   ↓
+MySQL
 
 Router
 
-↓
+Handles:
+
+HTTP requests
+
+Request validation
+
+Authentication
+
+API responses
 
 Service
 
-↓
+Contains:
+
+Business rules
+
+Workflow logic
+
+Authorization-related business decisions
+
+Application operations
 
 Repository
 
-↓
+Handles:
 
-SQLAlchemy
+Database queries
 
-↓
+Data persistence
 
-MySQL
+Database-specific operations
 
-\`\`\`
+Main Features
 
-The router handles HTTP requests and authentication. The service layer contains business rules and workflow logic. The repository layer handles database queries and persistence.
+JWT authentication
 
-**## Main features**
+Team Member, Manager, and Admin roles
 
-\- JWT authentication
+User management
 
-\- Team Member, Manager, and Admin roles
+Project management
 
-\- User management
+Project member assignment
 
-\- Project management and member assignment
+Weekly report creation
 
-\- Weekly report creation and submission
+Weekly report submission
 
-\- Report review and correction workflow
+Report review
 
-\- Report version history
+Report correction workflow
 
-\- Draft privacy
+Report version history
 
-\- Dashboard and analytics
+Draft privacy
 
-\- Gemini AI assistant
+Dashboard
 
-**## Report workflow**
+Analytics
 
-\`\`\`text
+Gemini AI assistant
+
+Report Workflow
+
+Reports follow the workflow below:
 
 DRAFT
-
-↓
-
+  ↓
 SUBMITTED
-
-↓
-
+  ↓
 MANAGER REVIEW
+  ├── APPROVED
+  │
+  └── NEEDS_CORRECTION
+          ↓
+     EDIT NEW VERSION
+          ↓
+       SUBMITTED
+          ↓
+       APPROVED
 
-├── APPROVED
+Old submitted versions remain unchanged.
 
-└── NEEDS\_CORRECTION
+Manager reviews are linked to the exact report version being reviewed.
 
-     ↓
+Role Access
 
-EDIT NEW VERSION
+Feature                    Team Member   Manager   Admin
 
-     ↓
+Create/edit own reports        Yes         No       No
+Submit own reports             Yes         No       No
+View team reports              No          Yes      Yes
+Request corrections            No          Yes      Yes
+Approve reports                No          Yes      Yes
+Dashboard and analytics        No          Yes      Yes
+Manage projects                No          Yes      Yes
+Manage users                   No          No       Yes
+AI assistant                   No          Yes      Yes
 
-  SUBMITTED
+The backend remains the final authorization boundary.
 
-     ↓
+Role and active-status checks are applied to protected requests.
 
-  APPROVED
+AI Assistant
 
-\`\`\`
-
-Old submitted versions remain unchanged. Manager reviews are linked to the exact report version being reviewed.
-
-**## Role access**
-
-\| Feature | Team Member | Manager | Admin |
-
-\|---|---:|---:|---:|
-
-\| Create/edit own reports | Yes | No | No |
-
-\| Submit own reports | Yes | No | No |
-
-\| View team reports | No | Yes | Yes |
-
-\| Request corrections | No | Yes | Yes |
-
-\| Approve reports | No | Yes | Yes |
-
-\| Dashboard and analytics | No | Yes | Yes |
-
-\| Manage projects | No | Yes | Yes |
-
-\| Manage users | No | No | Yes |
-
-\| AI assistant | No | Yes | Yes |
-
-The backend remains the final authorization boundary. Role and active status are checked on protected requests.
-
-**## AI assistant**
-
-The backend exposes:
-
-\`\`\`text
+The backend exposes the following endpoint:
 
 POST /api/v1/ai/chat
 
-\`\`\`
+The AI assistant works as follows:
 
-The backend first loads relevant submitted report data, creates structured context, and then sends that context to Gemini.
+User Request
+     ↓
+FastAPI
+     ↓
+Load Relevant Submitted Reports
+     ↓
+Create Structured Context
+     ↓
+Send Context to Gemini
+     ↓
+Return AI Response
+
+The backend first loads relevant submitted report data, creates
+structured context, and then sends that context to Gemini.
 
 The Gemini API key remains only in the FastAPI backend.
 
-**## Verification**
+Verification
 
-After installing dependencies and configuring the database, run:
-
-\`\`\`bash
+After completing the installation, environment configuration, and
+database setup, run the test suite:
 
 pytest -q
 
-\`\`\`
-
-Then start the backend:
-
-\`\`\`bash
+If the tests pass, start the backend:
 
 uvicorn app.main --reload
 
-\`\`\`
+Then open:
+
+http://127.0.0.1:8000
+
+For API documentation:
+
+http://127.0.0.1:8000/docs
+
+Security Notes
+
+Never commit or expose the following:
+
+.env
+
+Database passwords
+
+JWT signing secrets
+
+Gemini API keys
+
+Other private credentials
+
+Make sure .env is included in .gitignore.
+
+The Gemini API key should only be available to the FastAPI backend and
+should never be exposed through frontend code or NEXT_PUBLIC_*
+environment variables.
